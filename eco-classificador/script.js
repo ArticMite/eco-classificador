@@ -1,90 +1,124 @@
+// Importações do Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Configuração do Firebase
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO", authDomain: "DEMO", projectId: "DEMO" };
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'eco-classificador-default';
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let userId;
+let userDocRef;
+let highScore = 0;
+
+// Autenticação e busca de dados
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        userId = user.uid;
+        userDocRef = doc(db, `artifacts/${appId}/users/${userId}/scores/highscore`);
+        try {
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                highScore = docSnap.data().score || 0;
+            }
+            elements.highScoreDisplay.textContent = highScore;
+        } catch (error) {
+            console.error("Erro ao buscar pontuação máxima:", error);
+        }
+    }
+});
+
+async function signInUser() {
+    try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
+        }
+    } catch (error)
+    {
+        console.error("Falha na autenticação:", error);
+    }
+}
+
+// Dados do Jogo
 const trashTypes = [
     { type: 'paper', name: 'Jornal', emoji: '📰' },
     { type: 'paper', name: 'Caixa de Papelão', emoji: '📦' },
-    { type: 'paper', name: 'Revista', emoji: ' M' },
-    { type: 'paper', name: 'Caderno Velho', emoji: ' 📓' },
-    { type: 'paper', name: 'Envelope', emoji: ' ✉️' },
+    { type: 'paper', name: 'Revista', emoji: '📖' },
     { type: 'plastic', name: 'Garrafa PET', emoji: '🥤' },
     { type: 'plastic', name: 'Embalagem Plástica', emoji: '🛍️' },
-    { type: 'plastic', name: 'Pote de Iogurte', emoji: '🍦' },
-    { type: 'plastic', name: 'Sacola Plástica', emoji: '🛒' },
-    { type: 'plastic', name: 'Brinquedo Quebrado', emoji: '🧸' },
+    { type: 'plastic', 'name': 'Brinquedo Quebrado', emoji: '🧸' },
     { type: 'glass', name: 'Garrafa de Vidro', emoji: '🍾' },
     { type: 'glass', name: 'Pote de Vidro', emoji: '🍯' },
-    { type: 'glass', name: 'Copo Quebrado', emoji: '🥂' },
-    { type: 'glass', name: 'Frasco de Perfume', emoji: '🧴' },
+    { type: 'glass', name: 'Copo Quebrado', emoji: '🍸' },
     { type: 'organic', name: 'Casca de Banana', emoji: '🍌' },
-    { type: 'organic', name: 'Resto de Comida', emoji: '🥘' },
-    { type: 'organic', name: 'Borra de Café', emoji: '☕' },
-    { type: 'organic', name: 'Folhas Secas', emoji: '🍂' },
-    { type: 'organic', name: 'Casca de Ovo', emoji: '🥚' }
+    { type: 'organic', name: 'Resto de Comida', emoji: '🍎' },
+    { type: 'organic', name: 'Folha Seca', emoji: '🍂' },
+    { type: 'metal', name: 'Lata de Alumínio', emoji: '🥫' },
+    { type: 'metal', name: 'Lata de Aço', emoji: '🛢️' },
+    { type: 'metal', name: 'Tampa de Metal', emoji: '⚙️' }
 ];
 
-const trashArea = document.getElementById('trash-area');
-const scoreDisplay = document.getElementById('score');
-const timerDisplay = document.getElementById('timer');
-const messageBox = document.getElementById('message-box');
-const bins = document.querySelectorAll('.bin');
-const resetButton = document.getElementById('reset-button');
-const resetButtonEnd = document.getElementById('reset-button-end');
-const gameEndScreen = document.getElementById('game-end-screen');
-const endGameTitle = document.getElementById('end-game-title');
-const endGameMessage = document.getElementById('end-game-message');
-const starContainer = document.getElementById('star-container');
-const accuracyDisplay = document.getElementById('accuracy-display');
-const curiosityButton = document.getElementById('curiosity-button');
-const curiosityModalOverlay = document.getElementById('curiosity-modal-overlay');
-const modalCloseButton = document.getElementById('modal-close-button');
-const loadingSpinner = document.getElementById('loading-spinner');
-const curiosityText = document.getElementById('curiosity-text');
+// Elementos do DOM
+const elements = {
+    startScreen: document.getElementById('start-screen'),
+    gameContainer: document.getElementById('game-container'),
+    startButton: document.getElementById('start-button'),
+    trashArea: document.getElementById('trash-area'),
+    scoreDisplay: document.getElementById('score-value'),
+    timerDisplay: document.getElementById('timer'),
+    messageBox: document.getElementById('message-box'),
+    bins: document.querySelectorAll('.bin'),
+    resetButton: document.getElementById('reset-button'),
+    resetButtonEnd: document.getElementById('reset-button-end'),
+    gameEndScreen: document.getElementById('game-end-screen'),
+    endGameTitle: document.getElementById('end-game-title'),
+    endGameMessage: document.getElementById('end-game-message'),
+    starContainer: document.getElementById('star-container'),
+    accuracyDisplay: document.getElementById('accuracy-display'),
+    curiosityButton: document.getElementById('curiosity-button'),
+    curiosityModalOverlay: document.getElementById('curiosity-modal-overlay'),
+    modalCloseButton: document.getElementById('modal-close-button'),
+    loadingSpinner: document.getElementById('loading-spinner'),
+    curiosityText: document.getElementById('curiosity-text'),
+    streakCounter: document.getElementById('streak-counter'),
+    highScoreDisplay: document.getElementById('high-score-display')
+};
 
-let score = 0;
-let timeLeft = 60;
-let timerInterval;
-let currentTrash = null;
-let activeTrashElement = null;
-let gameActive = false;
-let correctAttempts = 0;
-let incorrectAttempts = 0;
-let totalAttempts = 0;
+// Estado do Jogo
+let score, timeLeft, timerInterval, currentTrash, activeTrashElement, gameActive;
+let correctAttempts, totalAttempts, streak;
 
-let isTouchDragging = false;
-let touchOffsetX = 0;
-let touchOffsetY = 0;
+let isDragging = false;
+let offsetX, offsetY;
 
 let audioContextStarted = false;
 
-const correctSound = new Tone.Synth({
-    oscillator: { type: "sine" },
-    envelope: {
-        attack: 0.005,
-        decay: 0.1,
-        sustain: 0.05,
-        release: 0.1
-    }
-}).toDestination();
+// Configuração de Áudio (Tone.js)
+const sounds = {
+    correct: new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 } }).toDestination(),
+    incorrect: new Tone.Synth({ oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } }).toDestination(),
+    gameEnd: new Tone.MembraneSynth().toDestination(),
+    streak: new Tone.PluckSynth().toDestination()
+};
 
-const incorrectSound = new Tone.Synth({
-    oscillator: { type: "triangle" },
-    envelope: {
-        attack: 0.005,
-        decay: 0.2,
-        sustain: 0.01,
-        release: 0.2
-    }
-}).toDestination();
+function initGame() {
+    elements.startScreen.classList.add('hidden');
+    elements.gameContainer.classList.remove('hidden');
 
-const gameEndSound = new Tone.MembraneSynth().toDestination();
-
-function startGame() {
     score = 0;
     timeLeft = 60;
     correctAttempts = 0;
-    incorrectAttempts = 0;
     totalAttempts = 0;
+    streak = 0;
     gameActive = true;
 
-    scoreDisplay.textContent = score;
+    elements.scoreDisplay.textContent = score;
+    elements.streakCounter.textContent = '';
     updateTimerDisplay();
     hideEndGameScreen();
     hideCuriosityButton();
@@ -96,21 +130,32 @@ function startGame() {
     timerInterval = setInterval(updateTimer, 1000);
 }
 
-function updateScore(points) {
+function updateScore(points, isCorrect) {
     if (!gameActive) return;
 
     score += points;
     score = Math.max(0, score);
-    scoreDisplay.textContent = score;
-    scoreDisplay.classList.add('score-flash');
-    setTimeout(() => {
-        scoreDisplay.classList.remove('score-flash');
-    }, 300);
+    elements.scoreDisplay.textContent = score;
+    elements.scoreDisplay.parentElement.classList.add('score-flash');
+    setTimeout(() => elements.scoreDisplay.parentElement.classList.remove('score-flash'), 500);
 
-    if (score >= 100) {
-        score = 100;
-        scoreDisplay.textContent = score;
-        endGame('win');
+    if (isCorrect) {
+        streak++;
+        if (streak > 1) {
+            elements.streakCounter.textContent = `🔥 Sequência de ${streak}!`;
+            elements.streakCounter.classList.add('score-flash');
+            setTimeout(() => elements.streakCounter.classList.remove('score-flash'), 500);
+        }
+        if (streak > 0 && streak % 5 === 0) {
+            timeLeft += 5;
+            updateTimerDisplay();
+            showMessage(`+5s de bônus por ${streak} acertos seguidos!`, 'success');
+            sounds.streak.triggerAttackRelease("G5", "8n", Tone.context.currentTime + 0.1);
+            return; // Retorna para não sobrescrever a mensagem de bônus
+        }
+    } else {
+        streak = 0;
+        elements.streakCounter.textContent = '';
     }
 }
 
@@ -120,402 +165,323 @@ function updateTimer() {
     timeLeft--;
     updateTimerDisplay();
 
-    if (timeLeft <= 10) {
-        timerDisplay.classList.add('text-red-500', 'font-bold');
-    } else {
-        timerDisplay.classList.remove('text-red-500', 'font-bold');
+    if (timeLeft <= 10 && !elements.timerDisplay.classList.contains('time-warning')) {
+        elements.timerDisplay.classList.add('time-warning');
     }
 
     if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        if (score < 100) {
-            endGame('lose');
-        }
+        endGame('lose');
     }
 }
 
 function updateTimerDisplay() {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
-    timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    elements.timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function showMessage(message, type = 'info') {
-    messageBox.textContent = message;
-    messageBox.className = 'message-box w-full md:w-auto flex-grow';
+    elements.messageBox.textContent = message;
+    elements.messageBox.className = 'message-box w-full md:w-auto flex-grow'; // Reset classes
 
-    if (type === 'success') {
-        messageBox.classList.add('bg-green-100', 'text-green-800', 'border-green-300');
-        correctSound.triggerAttackRelease("C5", "8n", Tone.context.currentTime + 0.05);
-        showCuriosityButton();
-    } else if (type === 'error') {
-        messageBox.classList.add('bg-red-100', 'text-red-800', 'border-red-300');
-        incorrectSound.triggerAttackRelease("C3", "8n", Tone.context.currentTime + 0.05);
-        hideCuriosityButton();
-    } else {
-        messageBox.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-300');
-        hideCuriosityButton();
+    switch (type) {
+        case 'success':
+            elements.messageBox.classList.add('bg-green-100', 'text-green-800', 'border-green-400');
+            sounds.correct.triggerAttackRelease("C5", "8n");
+            showCuriosityButton();
+            break;
+        case 'error':
+            elements.messageBox.classList.add('bg-red-100', 'text-red-800', 'border-red-400');
+            sounds.incorrect.triggerAttackRelease("C3", "8n");
+            hideCuriosityButton();
+            break;
+        default:
+            elements.messageBox.classList.add('bg-blue-100', 'text-blue-800', 'border-blue-400');
+            hideCuriosityButton();
     }
-    messageBox.classList.add('message-pop');
-    setTimeout(() => {
-        messageBox.classList.remove('message-pop');
-    }, 300);
+    elements.messageBox.classList.add('message-pop');
 }
 
 function generateNewTrash() {
     if (!gameActive) return;
-    if (activeTrashElement) {
-        activeTrashElement.remove();
-        activeTrashElement = null;
-    }
+    if (activeTrashElement) activeTrashElement.remove();
 
-    const randomIndex = Math.floor(Math.random() * trashTypes.length);
-    currentTrash = trashTypes[randomIndex];
+    currentTrash = trashTypes[Math.floor(Math.random() * trashTypes.length)];
     activeTrashElement = document.createElement('div');
-    activeTrashElement.classList.add(
-        'draggable',
-        'w-28', 'h-28', 'md:w-32', 'md:h-32',
-        'bg-white', 'rounded-xl', 'shadow-md', 'flex', 'flex-col', 'items-center', 'justify-center',
-        'text-center', 'p-2', 'text-gray-800', 'font-semibold', 'text-sm',
-        'trash-spawn'
-    );
+    activeTrashElement.className = 'draggable w-28 h-28 md:w-32 md:h-32 bg-white rounded-xl shadow-lg flex flex-col items-center justify-center text-center p-2 text-gray-800 font-semibold text-sm trash-spawn';
     activeTrashElement.setAttribute('draggable', 'true');
     activeTrashElement.setAttribute('data-type', currentTrash.type);
-    activeTrashElement.innerHTML = `
-        <span class="text-4xl md:text-5xl mb-1">${currentTrash.emoji}</span>
-        <span>${currentTrash.name}</span>
-    `;
+    activeTrashElement.innerHTML = `<span class="text-4xl md:text-5xl mb-1">${currentTrash.emoji}</span><span>${currentTrash.name}</span>`;
 
-    trashArea.appendChild(activeTrashElement);
+    elements.trashArea.appendChild(activeTrashElement);
 
-    activeTrashElement.addEventListener('touchstart', touchStart, { passive: false });
-    activeTrashElement.addEventListener('touchmove', touchMove, { passive: false });
-    activeTrashElement.addEventListener('touchend', touchEnd);
-
-    showMessage('Arraste o lixo para a lixeira correta!', 'info');
+    activeTrashElement.addEventListener('mousedown', startDrag);
+    activeTrashElement.addEventListener('touchstart', startDrag, { passive: false });
 }
 
-function touchStart(e) {
-    if (!audioContextStarted) {
-        Tone.start();
-        audioContextStarted = true;
+function handleDrop(binElement) {
+    if (!gameActive || !currentTrash) return;
+
+    const droppedTrashType = currentTrash.type;
+    const acceptedBinType = binElement.getAttribute('data-accepts');
+
+    totalAttempts++;
+
+    binElement.classList.add('feedback-animation');
+
+    if (droppedTrashType === acceptedBinType) {
+        correctAttempts++;
+        updateScore(10, true);
+        showMessage('Correto! +10 pontos!', 'success');
+        binElement.classList.add('correct');
+        createParticles(binElement);
+    } else {
+        updateScore(-5, false);
+        showMessage(`Ops! ${currentTrash.name} é ${translateType(currentTrash.type)}.`, 'error');
+        binElement.classList.add('incorrect');
     }
 
-    if (!gameActive || e.touches.length !== 1) return;
-    isTouchDragging = true;
-    e.preventDefault();
+    setTimeout(() => {
+        binElement.classList.remove('feedback-animation', 'correct', 'incorrect');
+    }, 500);
 
-    const touch = e.touches[0];
-    const rect = activeTrashElement.getBoundingClientRect();
-
-    touchOffsetX = touch.clientX - rect.left;
-    touchOffsetY = touch.clientY - rect.top;
-
-    activeTrashElement.style.position = 'absolute';
-    activeTrashElement.style.left = (rect.left) + 'px';
-    activeTrashElement.style.top = (rect.top) + 'px';
-    document.body.appendChild(activeTrashElement);
-
-    activeTrashElement.classList.add('dragging', 'touch-dragging');
+    generateNewTrash();
 }
 
-function touchMove(e) {
-    if (!isTouchDragging || !gameActive || e.touches.length !== 1) return;
-    e.preventDefault();
+async function endGame(status) {
+    gameActive = false;
+    clearInterval(timerInterval);
+    elements.trashArea.innerHTML = '';
+    hideCuriosityButton();
+    sounds.gameEnd.triggerAttackRelease("C2", "1n");
 
-    const touch = e.touches[0];
-    const newX = touch.clientX - touchOffsetX;
-    const newY = touch.clientY - touchOffsetY;
+    elements.gameEndScreen.classList.remove('win', 'lose');
+    elements.gameEndScreen.classList.add('active');
 
-    activeTrashElement.style.left = newX + 'px';
-    activeTrashElement.style.top = newY + 'px';
-}
+    const accuracy = totalAttempts > 0 ? ((correctAttempts / totalAttempts) * 100).toFixed(1) : 0;
+    elements.accuracyDisplay.textContent = `Acertos: ${correctAttempts} de ${totalAttempts} (${accuracy}%)`;
 
-function touchEnd(e) {
-    if (!isTouchDragging || !gameActive) return;
-    isTouchDragging = false;
-    activeTrashElement.classList.remove('dragging', 'touch-dragging');
-
-    const touch = e.changedTouches[0];
-    checkDrop(touch.clientX, touch.clientY);
-
-    if (activeTrashElement && activeTrashElement.parentNode === document.body) {
-        activeTrashElement.remove();
-        activeTrashElement = null;
-    }
-}
-
-function checkDrop(dropX, dropY) {
-    let droppedOnBin = false;
-    bins.forEach(bin => {
-        const rect = bin.getBoundingClientRect();
-        if (dropX >= rect.left && dropX <= rect.right &&
-            dropY >= rect.top && dropY <= rect.bottom) {
-            
-            bin.classList.remove('drag-over');
-            const droppedTrashType = currentTrash.type;
-            const acceptedBinType = bin.getAttribute('data-accepts');
-
-            totalAttempts++;
-
-            bin.classList.add('bin-feedback');
-            setTimeout(() => {
-                bin.classList.remove('bin-feedback');
-            }, 300);
-
-            if (droppedTrashType === acceptedBinType) {
-                correctAttempts++;
-                updateScore(10);
-                showMessage('Correto! +10 pontos!', 'success');
-            } else {
-                incorrectAttempts++;
-                updateScore(-5);
-                showMessage('Incorreto! Tente novamente. -5 pontos.', 'error');
+    if (score > highScore) {
+        highScore = score;
+        elements.highScoreDisplay.textContent = highScore;
+        if (userDocRef) {
+            try {
+                await setDoc(userDocRef, { score: highScore }, { merge: true });
+            } catch (e) {
+                console.error("Erro ao salvar pontuação máxima: ", e);
             }
-            droppedOnBin = true;
         }
-    });
-
-    if (!droppedOnBin) {
-        showMessage('O lixo não foi descartado em uma lixeira válida.', 'info');
     }
 
-    if (gameActive) {
-        generateNewTrash();
+    if (status === 'lose') {
+        elements.gameEndScreen.classList.add('lose');
+        elements.endGameTitle.textContent = 'Tempo Esgotado!';
+        elements.endGameMessage.textContent = `Sua pontuação final foi: ${score}.`;
+        displayStars(calculateStars());
     }
 }
+
+function hideEndGameScreen() { elements.gameEndScreen.classList.remove('active'); }
+function showCuriosityButton() { elements.curiosityButton.classList.add('active'); }
+function hideCuriosityButton() { elements.curiosityButton.classList.remove('active'); }
+function showCuriosityModal() { elements.curiosityModalOverlay.classList.add('active'); }
+function hideCuriosityModal() { elements.curiosityModalOverlay.classList.remove('active'); }
+function showLoadingSpinner() { elements.loadingSpinner.classList.add('active'); elements.curiosityText.textContent = 'Gerando curiosidade...'; }
+function hideLoadingSpinner() { elements.loadingSpinner.classList.remove('active'); }
 
 function calculateStars() {
     if (totalAttempts === 0) return 0;
     const accuracy = (correctAttempts / totalAttempts) * 100;
-
-    if (accuracy === 100) {
-        return 3;
-    } else if (accuracy >= 75) {
-        return 2;
-    } else if (accuracy >= 50) {
-        return 1;
-    } else {
-        return 0;
-    }
+    if (accuracy >= 90) return 3;
+    if (accuracy >= 70) return 2;
+    if (accuracy >= 50) return 1;
+    return 0;
 }
 
 function displayStars(numStars) {
     let starsHtml = '';
     for (let i = 0; i < 3; i++) {
-        if (i < numStars) {
-            starsHtml += '⭐';
-        } else {
-            starsHtml += '☆';
-        }
+        starsHtml += (i < numStars) ? '⭐' : '☆';
     }
-    starContainer.innerHTML = starsHtml;
+    elements.starContainer.innerHTML = starsHtml;
 }
 
-function endGame(status) {
-    gameActive = false;
-    clearInterval(timerInterval);
-    trashArea.style.display = 'none';
-    bins.forEach(bin => bin.style.display = 'none');
-    hideCuriosityButton();
-    if (activeTrashElement) {
-        activeTrashElement.remove();
-        activeTrashElement = null;
+function translateType(type) {
+    const types = { paper: 'Papel', plastic: 'Plástico', glass: 'Vidro', organic: 'Orgânico', metal: 'Metal' };
+    return types[type] || 'desconhecido';
+}
+
+function createParticles(element) {
+    const rect = element.getBoundingClientRect();
+    const containerRect = elements.gameContainer.getBoundingClientRect();
+
+    for (let i = 0; i < 20; i++) {
+        const p = document.createElement('div');
+        p.classList.add('particle');
+        const color = getComputedStyle(element).backgroundColor;
+        p.style.setProperty('--color', color);
+
+        const size = Math.random() * 10 + 5;
+        p.style.width = `${size}px`;
+        p.style.height = `${size}px`;
+
+        p.style.left = `${rect.left - containerRect.left + rect.width / 2}px`;
+        p.style.top = `${rect.top - containerRect.top + rect.height / 2}px`;
+
+        const angle = Math.random() * 360;
+        const radius = Math.random() * 100 + 50;
+        const x = Math.cos(angle * Math.PI / 180) * radius;
+        const y = Math.sin(angle * Math.PI / 180) * radius;
+
+        p.style.setProperty('--x', `${x}px`);
+        p.style.setProperty('--y', `${y}px`);
+
+        elements.gameContainer.appendChild(p);
+        setTimeout(() => p.remove(), 800);
     }
-    gameEndSound.triggerAttackRelease("C2", "2n");
-
-    gameEndScreen.classList.add('active');
-    starContainer.style.display = 'block';
-    accuracyDisplay.style.display = 'block';
-
-    gameEndScreen.classList.remove('win', 'lose');
-
-    const accuracy = totalAttempts > 0 ? ((correctAttempts / totalAttempts) * 100).toFixed(1) : 0;
-    accuracyDisplay.textContent = `Acertos: ${correctAttempts} de ${totalAttempts} (${accuracy}%)`;
-
-    if (status === 'win') {
-        gameEndScreen.classList.add('win');
-        endGameTitle.textContent = 'Parabéns! Você Venceu!';
-        endGameMessage.textContent = 'Você é um verdadeiro Eco-Héroi!';
-        const numStars = calculateStars();
-        displayStars(numStars);
-        showMessage('Vitória! Confira suas estrelas!', 'success');
-    } else {
-        gameEndScreen.classList.add('lose');
-        endGameTitle.textContent = 'Tempo Esgotado!';
-        endGameMessage.textContent = 'Sua pontuação final foi: ' + score + ' pontos. Vamos tentar de novo para melhorar sua classificação!';
-        displayStars(calculateStars());
-        showMessage('O tempo acabou. Tente novamente!', 'error');
-    }
-}
-
-function hideEndGameScreen() {
-    gameEndScreen.classList.remove('active');
-    trashArea.style.display = 'flex';
-    bins.forEach(bin => bin.style.display = 'grid');
-    starContainer.innerHTML = '';
-    accuracyDisplay.textContent = '';
-}
-
-function showCuriosityButton() {
-    curiosityButton.classList.add('active');
-}
-
-function hideCuriosityButton() {
-    curiosityButton.classList.remove('active');
-}
-
-function showCuriosityModal() {
-    curiosityModalOverlay.classList.add('active');
-}
-
-function hideCuriosityModal() {
-    curiosityModalOverlay.classList.remove('active');
-    curiosityText.textContent = '';
-}
-
-function showLoadingSpinner() {
-    loadingSpinner.classList.add('active');
-    curiosityText.textContent = 'Gerando curiosidade...';
-}
-
-function hideLoadingSpinner() {
-    loadingSpinner.classList.remove('active');
 }
 
 async function getEcoCuriosity() {
-    if (!currentTrash || !currentTrash.name) {
-        curiosityText.textContent = 'Nenhum item de lixo para gerar curiosidade no momento.';
-        return;
-    }
+    if (!currentTrash) return;
 
     showLoadingSpinner();
     showCuriosityModal();
 
-    const trashTypeName = currentTrash.name;
-    const trashTypeCategory = currentTrash.type;
-    const prompt = `Gere uma curiosidade ecológica ou dica rápida e interessante sobre a reciclagem, descarte correto ou o impacto ambiental de "${trashTypeName}" (${trashTypeCategory}). Seja conciso (máximo 2-3 frases) e informativo.`;
-    
-    const apiKey = "AIzaSyAN0Wgeffv_KeE5qrntBs-5pco-GPSScfE"; 
-    
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const prompt = `Gere uma curiosidade ecológica ou dica rápida e interessante sobre a reciclagem de "${currentTrash.name}" (${translateType(currentTrash.type)}). Seja conciso (máximo 2-3 frases) e informativo, em português do Brasil.`;
+
+    const apiKey = ""; // A chave da API será injetada pelo ambiente de execução
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
 
-        if (!response.ok) 
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
         const result = await response.json();
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        if (result.candidates && result.candidates.length > 0 &&
-            result.candidates[0].content && result.candidates[0].content.parts &&
-            result.candidates[0].content.parts.length > 0) {
-            const text = result.candidates[0].content.parts[0].text;
-            curiosityText.textContent = text;
-        } else {
-            curiosityText.textContent = 'Não foi possível gerar uma curiosidade no momento. Tente novamente.';
-            console.warn("Unexpected API response structure:", result);
-        }
-    } catch (error) 
-    
-    finally {
+        elements.curiosityText.textContent = text || 'Não foi possível gerar uma curiosidade no momento.';
+
+    } catch (error) {
+        console.error('Erro ao chamar a API Gemini:', error);
+        elements.curiosityText.textContent = 'Ocorreu um erro ao buscar a curiosidade.';
+    } finally {
         hideLoadingSpinner();
     }
 }
 
-bins.forEach(bin => {
-    bin.addEventListener('dragover', (e) => {
-        if (!audioContextStarted) {
-            Tone.start();
-            audioContextStarted = true;
-        }
-        if (!gameActive) {
-            e.preventDefault();
-            return;
-        }
-        e.preventDefault();
-        bin.classList.add('drag-over');
-    });
+// Lógica de Arrastar e Soltar (Drag and Drop)
+function startDrag(e) {
+    if (!gameActive || !e.target.classList.contains('draggable')) return;
+    
+    startAudio();
+    e.preventDefault();
 
-    bin.addEventListener('dragleave', () => {
-        bins.forEach(b => b.classList.remove('drag-over'));
-    });
+    activeTrashElement = e.target;
+    isDragging = true;
+    
+    const rect = activeTrashElement.getBoundingClientRect();
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
 
-    bin.addEventListener('drop', (e) => {
-        e.preventDefault();
-        bin.classList.remove('drag-over');
+    offsetX = clientX - rect.left;
+    offsetY = clientY - rect.top;
 
-        if (!gameActive || !currentTrash || !activeTrashElement) return;
+    activeTrashElement.style.position = 'absolute';
+    activeTrashElement.style.width = `${rect.width}px`;
+    activeTrashElement.style.height = `${rect.height}px`;
+    activeTrashElement.style.left = `${clientX - offsetX}px`;
+    activeTrashElement.style.top = `${clientY - offsetY}px`;
+    
+    document.body.appendChild(activeTrashElement);
+    activeTrashElement.classList.add('dragging');
 
-        const draggedDataType = activeTrashElement.getAttribute('data-type');
-        if (draggedDataType !== currentTrash.type) {
-            return;
-        }
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('touchmove', dragMove, { passive: false });
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+}
 
-        activeTrashElement.classList.remove('dragging');
+function dragMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+    
+    moveElement(clientX, clientY);
 
-        const droppedTrashType = currentTrash.type;
-        const acceptedBinType = bin.getAttribute('data-accepts');
-
-        totalAttempts++;
-
-        bin.classList.add('bin-feedback');
-        setTimeout(() => {
-            bin.classList.remove('bin-feedback');
-        }, 300);
-
-        if (droppedTrashType === acceptedBinType) {
-            correctAttempts++;
-            updateScore(10);
-            showMessage('Correto! +10 pontos!', 'success');
+    elements.bins.forEach(bin => {
+        const rect = bin.getBoundingClientRect();
+        if (clientX > rect.left && clientX < rect.right && clientY > rect.top && clientY < rect.bottom) {
+            bin.classList.add('drag-over');
+            const color = getComputedStyle(bin).backgroundColor;
+            bin.style.setProperty('--feedback-color', color);
         } else {
-            incorrectAttempts++;
-            updateScore(-5);
-            showMessage('Incorreto! Tente novamente. -5 pontos.', 'error');
-        }
-        
-        if (gameActive) {
-            generateNewTrash();
+            bin.classList.remove('drag-over');
         }
     });
-});
+}
 
-trashArea.addEventListener('dragstart', (e) => {
-    if (!audioContextStarted) {
+function moveElement(x, y) {
+    activeTrashElement.style.left = `${x - offsetX}px`;
+    activeTrashElement.style.top = `${y - offsetY}px`;
+}
+
+function endDrag(e) {
+    if (!isDragging) return;
+    isDragging = false;
+
+    // We need to temporarily hide the element to check what's underneath
+    activeTrashElement.style.pointerEvents = 'none';
+    const clientX = e.type === 'touchend' ? e.changedTouches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchend' ? e.changedTouches[0].clientY : e.clientY;
+    const elementUnder = document.elementFromPoint(clientX, clientY);
+    activeTrashElement.style.pointerEvents = 'auto';
+
+    let droppedOnBin = false;
+    
+    if (elementUnder) {
+        const bin = elementUnder.closest('.bin');
+        if (bin) {
+            handleDrop(bin);
+            droppedOnBin = true;
+        }
+    }
+
+    if (!droppedOnBin) {
+        generateNewTrash();
+    }
+    
+    activeTrashElement.remove(); // Always remove the dragged clone
+
+    document.removeEventListener('mousemove', dragMove);
+    document.removeEventListener('touchmove', dragMove);
+    document.removeEventListener('mouseup', endDrag);
+    document.removeEventListener('touchend', endDrag);
+}
+
+function startAudio() {
+     if (!audioContextStarted) {
         Tone.start();
         audioContextStarted = true;
     }
-    if (!gameActive || !activeTrashElement || e.target !== activeTrashElement) {
-        e.preventDefault();
-        return;
-    }
-    e.dataTransfer.setData('text/plain', e.target.getAttribute('data-type'));
-    e.target.classList.add('dragging');
+}
+
+// Event Listeners Iniciais
+elements.startButton.addEventListener('click', initGame);
+elements.resetButton.addEventListener('click', initGame);
+elements.resetButtonEnd.addEventListener('click', initGame);
+elements.curiosityButton.addEventListener('click', getEcoCuriosity);
+elements.modalCloseButton.addEventListener('click', hideCuriosityModal);
+elements.curiosityModalOverlay.addEventListener('click', (e) => {
+    if (e.target === elements.curiosityModalOverlay) hideCuriosityModal();
 });
 
-trashArea.addEventListener('dragend', (e) => {
-    if (activeTrashElement) {
-        activeTrashElement.classList.remove('dragging');
-    }
-});
-
-
-curiosityButton.addEventListener('click', getEcoCuriosity);
-modalCloseButton.addEventListener('click', hideCuriosityModal);
-curiosityModalOverlay.addEventListener('click', (e) => {
-    if (e.target === curiosityModalOverlay) {
-        hideCuriosityModal();
-    }
-});
-
-resetButton.addEventListener('click', startGame);
-resetButtonEnd.addEventListener('click', startGame);
-
-window.onload = () => {
-    startGame();
-
-};
+// Iniciar autenticação ao carregar a página
+signInUser();
