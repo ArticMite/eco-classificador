@@ -407,12 +407,7 @@ async function getEcoCuriosity() {
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API response not OK:', response.status, response.statusText, errorText);
-            curiosityText.textContent = `Erro ao buscar curiosidade: ${response.status} ${response.statusText}. Detalhes: ${errorText.substring(0, 200)}...`;
-            return;
-        }
+        if (!response.ok) 
 
         const result = await response.json();
 
@@ -425,10 +420,9 @@ async function getEcoCuriosity() {
             curiosityText.textContent = 'Não foi possível gerar uma curiosidade no momento. Tente novamente.';
             console.warn("Unexpected API response structure:", result);
         }
-    } catch (error) {
-        console.error('Erro ao chamar a API Gemini:', error);
-        curiosityText.textContent = 'Ocorreu um erro ao buscar a curiosidade. Verifique sua conexão e o console para mais detalhes. (Possível problema na chave da API ou permissões)';
-    } finally {
+    } catch (error) 
+    
+    finally {
         hideLoadingSpinner();
     }
 }
@@ -523,4 +517,5 @@ resetButtonEnd.addEventListener('click', startGame);
 
 window.onload = () => {
     startGame();
+
 };
