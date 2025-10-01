@@ -1,0 +1,387 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Luckiest+Guy&family=Press+Start+2P&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #e0f2f7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 1rem;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+h1 {
+    font-family: 'Luckiest Guy', cursive;
+    color: #333;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+#score, #timer {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.8rem;
+}
+
+.draggable {
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    z-index: 10;
+    touch-action: none;
+    will-change: transform;
+}
+
+.dragging {
+    opacity: 0.8;
+    transform: scale(1.05) rotate(5deg);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.draggable.touch-dragging {
+    position: absolute;
+    z-index: 1000;
+}
+
+.trash-spawn {
+    animation: spawnPop 0.3s ease-out;
+}
+
+@keyframes spawnPop {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.bin {
+    width: 130px;
+    height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease-in-out;
+    position: relative;
+}
+
+@media (min-width: 768px) {
+    .bin {
+        width: 150px;
+        height: 150px;
+    }
+}
+
+.bin:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+}
+
+.bin.drag-over {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.9), 0 0 30px rgba(0, 255, 0, 0.7);
+    border: 3px solid #fff;
+}
+
+.bin-feedback {
+    animation: binFeedback 0.3s ease-out;
+}
+
+@keyframes binFeedback {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.game-container {
+    width: 100%;
+    max-width: 850px;
+    background-color: #ffffff;
+    border-radius: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.8rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.trash-area {
+    min-height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    border: 3px dashed #7bc8e7;
+    border-radius: 1.5rem;
+    background-color: #f5fcff;
+    position: relative;
+    overflow: hidden;
+}
+
+.bins-area {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    width: 100%;
+    justify-items: center;
+}
+
+@media (min-width: 768px) {
+    .bins-area {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.reset-button, .curiosity-button {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 1rem;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.reset-button {
+    background-color: #20c8ab;
+}
+
+.reset-button:hover {
+    background-color: #1aa08c;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.reset-button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.curiosity-button {
+    background-color: #9c58f6;
+}
+.curiosity-button:hover {
+    background-color: #8a3eed;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+.curiosity-button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.curiosity-button.active {
+    display: block;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.message-box {
+    padding: 1rem 1.5rem;
+    border-radius: 1rem;
+    font-weight: 700;
+    min-height: 50px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.message-pop {
+    animation: messagePop 0.3s ease-out;
+}
+
+@keyframes messagePop {
+    0% { transform: scale(0.9); opacity: 0; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+.score-animation {
+    transition: color 0.1s ease-out;
+}
+
+.score-flash {
+    color: #ff4500 !important;
+    animation: scoreFlash 0.3s ease-out;
+}
+
+@keyframes scoreFlash {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.game-end-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem;
+    background-color: #e8ffee;
+    border-radius: 2rem;
+    box-shadow: 0 15px 30px rgba(0, 150, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    gap: 1.5rem;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    animation: fadeIn 0.5s ease-out;
+}
+.game-end-screen.active {
+    display: flex;
+}
+
+.game-end-screen.lose {
+    background-color: #ffe6e6;
+    box-shadow: 0 15px 30px rgba(150, 0, 0, 0.2);
+}
+
+#end-game-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 3rem;
+    color: #28a745;
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+.game-end-screen.lose #end-game-title {
+    color: #dc3545;
+}
+
+#end-game-message {
+    font-size: 1.25rem;
+}
+
+.star-container {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.2em;
+    animation: starShine 1.5s infinite alternate;
+}
+
+@keyframes starShine {
+    from { text-shadow: 0 0 5px rgba(255,255,0,0.5); }
+    to { text-shadow: 0 0 20px rgba(255,255,0,1), 0 0 30px rgba(255,255,0,0.8); }
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 30;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+    width: 550px;
+    text-align: center;
+    position: relative;
+    animation: modalSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.modal-close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+}
+.modal-close-button:hover {
+    color: #ef4444;
+    transform: rotate(90deg);
+}
+
+.loading-spinner {
+    border: 5px solid rgba(0, 0, 0, 0.1);
+    border-top: 5px solid #3b82f6;
+    width: 40px;
+    height: 40px;
+    margin: 1.5rem auto;
+    display: none;
+}
+.loading-spinner.active {
+    display: block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+    from { opacity: 0; transform: translate(-50%, -70%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+@media (max-width: 767px) {
+    .game-container {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    h1 {
+        font-size: 2.5rem;
+    }
+    .bin {
+        width: 100px;
+        height: 100px;
+        font-size: 0.9rem;
+    }
+    .bin span:first-child {
+        font-size: 3rem;
+    }
+    .reset-button, .curiosity-button {
+        padding: 0.7rem 1.2rem;
+        font-size: 1rem;
+    }
+    .message-box {
+        font-size: 0.9rem;
+    }
+    .game-end-screen {
+        padding: 1.5rem;
+    }
+    #end-game-title {
+        font-size: 2.5rem;
+    }
+    .star-container {
+        font-size: 3rem;
+    }
+    .modal-content {
+        padding: 1.5rem;
+    }
+}
